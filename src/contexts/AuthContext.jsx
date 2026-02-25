@@ -3,17 +3,30 @@ import { supabase } from '../lib/supabase'
 
 const AuthContext = createContext(null)
 
+const GUEST_KEY = 'PF_GUEST_USER'
+const GUEST_ID = '00000000-0000-0000-0000-000000000000'
+const GUEST_OBJ = { id: GUEST_ID, email: 'visitante@propostafacil.com' }
+
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    // Check for emergency bypass (Guest Mode)
-    const bypassUser = localStorage.getItem('PF_GUEST_USER')
-    if (bypassUser) {
-      setUser(JSON.parse(bypassUser))
-      setLoading(false)
-      return
+    // Migrate old guest-user string to valid UUID format
+    const raw = localStorage.getItem(GUEST_KEY)
+    if (raw) {
+      try {
+        const parsed = JSON.parse(raw)
+        if (parsed.id && parsed.id !== GUEST_ID) {
+          // Old invalid ID found — fix it
+          localStorage.setItem(GUEST_KEY, JSON.stringify(GUEST_OBJ))
+        }
+        setUser(GUEST_OBJ)
+        setLoading(false)
+        return
+      } catch {
+        localStorage.removeItem(GUEST_KEY)
+      }
     }
 
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -22,7 +35,7 @@ export function AuthProvider({ children }) {
     })
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (!localStorage.getItem('PF_GUEST_USER')) {
+      if (!localStorage.getItem(GUEST_KEY)) {
         setUser(session?.user ?? null)
       }
     })
@@ -37,17 +50,15 @@ export function AuthProvider({ children }) {
     supabase.auth.signUp({ email, password })
 
   const signInGuest = () => {
-    const guest = { id: '00000000-0000-0000-0000-000000000000', email: 'visitante@propostafacil.com' }
-    localStorage.setItem('PF_GUEST_USER', JSON.stringify(guest))
-    setUser(guest)
+    localStorage.setItem(GUEST_KEY, JSON.stringify(GUEST_OBJ))
+    setUser(GUEST_OBJ)
   }
 
   const signOut = () => {
-    localStorage.removeItem('PF_GUEST_USER')
-    supabase.auth.signOut().then(() => {
-      setUser(null)
-      window.location.href = '/'
-    })
+    localStorage.removeItem(GUEST_KEY)
+    setUser(null)
+    supabase.auth.signOut()
+    // NO window.location.href — React Router handles the redirect
   }
 
   return (
