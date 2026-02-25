@@ -36,15 +36,22 @@ export function AuthProvider({ children }) {
   const signUp = (email, password) =>
     supabase.auth.signUp({ email, password })
 
+  const signInGuest = () => {
+    const guest = { id: '00000000-0000-0000-0000-000000000000', email: 'visitante@propostafacil.com' }
+    localStorage.setItem('PF_GUEST_USER', JSON.stringify(guest))
+    setUser(guest)
+  }
+
   const signOut = () => {
     localStorage.removeItem('PF_GUEST_USER')
     supabase.auth.signOut().then(() => {
-      window.location.href = '/login'
+      setUser(null)
+      window.location.href = '/'
     })
   }
 
   return (
-    <AuthContext.Provider value={{ user, loading, signIn, signUp, signOut }}>
+    <AuthContext.Provider value={{ user, loading, signIn, signUp, signOut, signInGuest }}>
       {children}
     </AuthContext.Provider>
   )

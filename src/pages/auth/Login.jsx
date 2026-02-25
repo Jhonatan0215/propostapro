@@ -4,7 +4,7 @@ import { useAuth } from '../../contexts/AuthContext'
 import { Sparkles, Mail, Lock, ArrowRight, Loader2 } from 'lucide-react'
 
 export default function Login() {
-  const { signIn } = useAuth()
+  const { signIn, signInGuest } = useAuth()
   const navigate = useNavigate()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -95,8 +95,8 @@ export default function Login() {
           <div className="mt-10 text-center space-y-4">
             <button
               onClick={() => {
-                localStorage.setItem('PF_GUEST_USER', JSON.stringify({ id: 'guest-user', email: 'visitante@propostafacil.com' }))
-                window.location.href = '/dashboard'
+                signInGuest()
+                navigate('/dashboard')
               }}
               className="w-full border-2 border-dashed border-surface-200 text-surface-400 hover:border-brand-500 hover:text-brand-600 font-bold py-3 rounded-2xl transition-premium text-sm"
             >
